@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,12 +29,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -49,8 +52,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,10 +65,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import edu.nd.pmcburne.hello.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.runBlocking
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MapViewModel>()
@@ -127,6 +135,8 @@ fun Screen(vm: MapViewModel) {
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectionDropdown(
     tags: List<String>,
@@ -134,23 +144,27 @@ fun SelectionDropdown(
     onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     val sortedTags = tags.sorted()
 
     Box(modifier = Modifier.fillMaxWidth()) {
-
-        // Trigger button (shows current selection)
-        Button(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
+        // Trigger button with border and padding
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, Color.Gray, MaterialTheme.shapes.medium)
+                .clickable { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             Text(
                 text = selectedTag,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Dropdown Arrow"
             )
         }
 
@@ -206,13 +220,32 @@ fun GoogleMap(landmarks: List<Landmark>, tags: List<String>, selectedTag: String
         cameraPositionState = cameraPositionState
     ) {
         filteredLandmarks.forEach { landmark ->
-            Marker(
-                state = MarkerState(
-                    position = LatLng(landmark.latitude, landmark.longitude)
-                ),
-                title = landmark.name,
-                snippet = landmark.description
-            )
+            MarkerInfoWindow(
+                state = MarkerState(LatLng(landmark.latitude, landmark.longitude)),
+                title = landmark.name
+            ) {
+                Card(
+//                    backgroundColor = Color.White,
+                    shape = RoundedCornerShape(8.dp),
+//                    elevation = 4.dp,
+                    modifier = Modifier.padding(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = landmark.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = landmark.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
         }
     }
 }
