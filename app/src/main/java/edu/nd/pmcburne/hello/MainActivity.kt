@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -88,6 +89,7 @@ class MainActivity : ComponentActivity() {
 fun Screen(vm: MapViewModel) {
     val landmarks by vm.landmarks.collectAsState()
     val tags by vm.tags.collectAsState()
+    val selectedTag by vm.selectedTag.collectAsState()
 
     Column(
         modifier = Modifier
@@ -105,7 +107,8 @@ fun Screen(vm: MapViewModel) {
 
         SelectionDropdown(
             tags = tags,
-            onChange = { tag, state -> vm.setTag(tag, state) }
+            selectedTag = selectedTag,
+            onSelect = { tag -> vm.setTag(tag) }
         )
 
         // Map takes remaining space
@@ -116,7 +119,8 @@ fun Screen(vm: MapViewModel) {
         ) {
             GoogleMap(
                 landmarks = landmarks,
-                tags = tags
+                tags = tags,
+                selectedTag = selectedTag
             )
         }
     }
@@ -124,22 +128,27 @@ fun Screen(vm: MapViewModel) {
 
 @Composable
 fun SelectionDropdown(
-    tags: Map<String, Boolean>,
-    onChange: (String, Boolean) -> Unit
+    tags: List<String>,
+    selectedTag: String,
+    onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val sortedTags = tags.toSortedMap()
+
+    val sortedTags = tags.sorted()
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        // Full-width trigger button
+
+        // Trigger button (shows current selection)
         Button(
             onClick = { expanded = true },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
         ) {
             Text(
-                text = "Select tags",
+                text = selectedTag,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
@@ -150,31 +159,20 @@ fun SelectionDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 300.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(8.dp)
-                )
         ) {
-            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                sortedTags.forEach { (tag, selected) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onChange(tag, !selected) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Checkbox(
-                            checked = selected,
-                            onCheckedChange = { state -> onChange(tag, state) }
-                        )
+            sortedTags.forEach { tag ->
+                DropdownMenuItem(
+                    text = {
                         Text(
                             text = tag,
-                            modifier = Modifier.padding(start = 8.dp),
                             style = MaterialTheme.typography.bodyMedium
                         )
+                    },
+                    onClick = {
+                        onSelect(tag)
+                        expanded = false
                     }
-                }
+                )
             }
         }
     }
@@ -182,9 +180,9 @@ fun SelectionDropdown(
 
 
 @Composable
-fun GoogleMap(landmarks: List<Landmark>, tags: Map<String, Boolean>) {
+fun GoogleMap(landmarks: List<Landmark>, tags: List<String>, selectedTag: String) {
     val filteredLandmarks = landmarks.filter { l ->
-        l.tag_list.any { tag -> tags[tag] == true}
+        l.tag_list.contains(selectedTag)
     }
     val cameraPositionState = rememberCameraPositionState()
 

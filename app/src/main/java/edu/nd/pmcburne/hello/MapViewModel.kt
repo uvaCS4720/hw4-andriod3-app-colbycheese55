@@ -1,5 +1,8 @@
 package edu.nd.pmcburne.hello
 
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,11 +13,14 @@ import java.util.Dictionary
 
 class MapViewModel : ViewModel() {
 
-    private val _tags = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val tags: StateFlow<Map<String, Boolean>> = _tags
+    private val _tags = MutableStateFlow<List<String>>(emptyList<String>())
+    val tags: StateFlow<List<String>> = _tags
 
     private val _landmarks = MutableStateFlow<List<Landmark>>(emptyList())
     val landmarks: StateFlow<List<Landmark>> = _landmarks
+
+    private val _selectedTag = MutableStateFlow<String>("core")
+    val selectedTag: StateFlow<String> = _selectedTag
 
     fun loadData() {
         viewModelScope.launch {
@@ -27,15 +33,12 @@ class MapViewModel : ViewModel() {
             val tagsMap = res
                 .flatMap { it.tag_list }   // get all tags
                 .distinct()                // remove duplicates
-                .associateWith { true }    // map each tag to true
 
             _tags.value = tagsMap
         }
     }
 
-    fun setTag(tag: String, value: Boolean) {
-        _tags.value = _tags.value.toMutableMap().apply {
-            this[tag] = value
-        }
+    fun setTag(tag: String) {
+        _selectedTag.value = tag
     }
 }
